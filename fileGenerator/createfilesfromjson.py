@@ -28,6 +28,11 @@ def remove_metadata_for_song(line):
     cleaned_text = re.sub(r'\[Chorus\] | \[Verse\]', '', line) 
     return cleaned_text
 
+def line_contains_metadata_nepali(line):
+    pattern = re.compile(r'को\.|[\d]+\.')
+    match = re.search(pattern, line)
+    return match
+
 def line_contains_metadata(line):
     if '[Chorus]' in line:
         return True
@@ -36,35 +41,60 @@ def line_contains_metadata(line):
     else:
         return False
 
+def add_metadata_for_song(line, filename_prefix):
+     if 'c' in filename_prefix:
+         cprefix = 'को.'
+         line  = f'{cprefix} {line}'
+     elif 's' in filename_prefix:
+         cprefix = '१.'
+         line  = f'{cprefix} {line}'
+     else:
+         pass
+     return line
 
 # Specify the path to the JSON file
 jsonl_file_path = 'songs.jsonl'
 folder_path = 'song'
+
 # Read the JSON file
 with open(jsonl_file_path, 'r', encoding='utf-8') as f:
     for line in f: 
         data = json.loads(line.strip())
 
+        #Make directory if it doesn't exists
         os.makedirs(folder_path, exist_ok=True)
+
+        #Romanize file names so its easier to search
         romanize = ntr.nep_to_rom(data['name'])
+
+        #Clean file names 
         clean_name = clean_text_for_filename(f"{data['number']} {romanize}")            
         file_name = f"{clean_name}.txt"
         file_path = os.path.join(folder_path, file_name)
         
+        #Split songs to individual lines
         song_lines = data['song'].splitlines()
         song_line_md = []
-        for line in song_lines:
+
+
+        #Format [Chorus] and [Verses]
+        for index, line in enumerate(song_lines):
+                if (index == 0):
+                    if not line_contains_metadata_nepali(line):
+                        line = add_metadata_for_song(line, data['number'])
                 cleaned_line = convert_metadata_for_songs(line)
                 if cleaned_line:
                     splines = cleaned_line.splitlines()
                     for lines in splines:
                         song_line_md.append(lines)
         
+        #Write songs to the file
         with open(file_path, 'w', encoding='utf-8') as f:
             for songline in song_line_md:
                 if (line_contains_metadata(songline)):
                     f.write(f"{songline.strip()}\n")
                 else:
+                    #only romanize text other than [Chorus], [Verse]
                     romanize = ntr.nep_to_rom(songline)
                     f.write(f"{songline.strip()}\n{romanize.strip().lower()}\n\n")
 
