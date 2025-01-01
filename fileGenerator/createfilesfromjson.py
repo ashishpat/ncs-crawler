@@ -8,8 +8,20 @@ def clean_text_for_filename(text):
     text = text.strip()
     
     # Remove any characters that are not alphanumeric, underscores, or hyphens
-    text = re.sub(r'[^\w\s\-]', '', text)
+    text = re.sub(r'[^A-Za-z _-]+', '', text)
     
+    # Convert to lowercase for consistency
+    text = text.lower()
+    
+    return text
+
+def clean_text_for_songnumber(text):
+    # Replace spaces with underscores
+    text = text.strip()
+    
+    # Remove any characters that are not alphanumeric, underscores, or hyphens
+    text = re.sub(r'[^A-Za-z0-9 _-]+', '', text)
+    text = re.sub(r's', 'b', text)
     # Convert to lowercase for consistency
     text = text.lower()
     
@@ -65,11 +77,12 @@ with open(jsonl_file_path, 'r', encoding='utf-8') as f:
         os.makedirs(folder_path, exist_ok=True)
 
         #Romanize file names so its easier to search
-        romanize = ntr.nep_to_rom(data['name'])
+        romanize_title = ntr.nep_to_rom(data['name'])
 
         #Clean file names 
-        clean_name = clean_text_for_filename(f"{data['number']} {romanize}")            
-        file_name = f"{clean_name}.txt"
+        cleaned_name = clean_text_for_filename(romanize_title)
+        song_number = f"{clean_text_for_songnumber(data['number'])}"
+        file_name =  f"{cleaned_name}.txt" if not song_number else f"{song_number} {cleaned_name}.txt"
         file_path = os.path.join(folder_path, file_name)
         
         #Split songs to individual lines

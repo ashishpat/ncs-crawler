@@ -172,3 +172,4 @@ cython_debug/
 
 fileGenerator/song
 .vscode/
+fileGenerator/song.zip
